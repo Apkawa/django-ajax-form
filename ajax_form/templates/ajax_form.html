@@ -1,0 +1,53 @@
+{% extends "index.html" %}
+{% block js %}
+    <script type="text/javascript" charset="utf-8" src="http://ajax.googleapis.com/ajax/libs/jquery/1.7.0/jquery.min.js"></script>
+    <script type="text/javascript" charset="utf-8" src="http://malsup.github.com/jquery.form.js"></script>
+    <script type="text/javascript" charset="utf-8" src="/static/js/form_render.js"></script>
+    <script type="text/javascript" charset="utf-8">
+        var json_form = JSON.parse(
+                '{"fields": {"gender": {"initial": null, "widget_attrs": {}, "required": true, "choices": [["m", "male"], ["f", "female"]], "help_text": "", "label": null, "type": "select"}, "is_active": {"initial": true, "widget_attrs": {}, "required": true, "label": null, "help_text": "", "type": "checkbox"}, "name": {"initial": null, "widget_attrs": {"maxlength": "20"}, "required": true, "label": "user name", "help_text": "is name", "type": "text"}}, "errors": {"gender": ["This field is required."], "is_active": ["This field is required."], "__all__": ["Example"]}, "data": {"name": "nya"}, "initial": {"gender": "m"}}')
+
+        function update_form(data) {
+            var jf = new JSONForm(data);
+            var form = jf.as_ul();
+            $("#test ul").html(form);
+        }
+
+        function test() {
+            $.ajax({
+                    url: '.',
+                    success: update_form,
+                    dataType:'json',
+                })
+            $('#test').ajaxForm({success:update_form})
+        }
+
+        $(document).ready( function() {
+            test()
+            //var jf = new JSONForm(json_form);
+            //var form = jf.as_ul();
+            //$("#test ul").html(form);
+            });
+
+    </script>
+
+{% endblock js %}
+
+{% block content %}
+   <h1 id="heading"> Ajax form</h1>
+    <form action='.' method='POST' id='test'>
+
+        <ul>
+
+        </ul>
+    <button type="submit">Submit</button>
+    </form>
+   <h1> Standart form</h1>
+    <form action='.' method='POST'>
+
+        <ul>
+            {{ form.as_ul }}
+        </ul>
+    <button type="submit">Submit</button>
+    </form>
+{% endblock content %}

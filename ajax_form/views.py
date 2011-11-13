@@ -55,7 +55,6 @@ class JSONForm(object):
 
         return smart_unicode(data)
 
-
     def get_field_type(self, field):
         widget = field.widget
         if isinstance(widget, forms.Select):
@@ -68,20 +67,23 @@ class JSONForm(object):
             return 'hidden'
         return 'text'
 
-    def field_to_dict(self, field):
+    def field_to_dict(self, bound_field):
         field_dict = {}
+        field = bound_field.field
         for attr in ['required',
                         'label',
-                        'initial',
-                        'help_text',
+                        #'help_text',
                         #'error_messages',
                         'choices',
                         ]:
             if hasattr(field, attr):
                 field_dict[attr] = getattr(field, attr)
 
+        field_dict['value'] = bound_field.value()
+        field_dict['label'] = bound_field.label
+        field_dict['help_text'] = bound_field.help_text
         field_dict['type'] = self.get_field_type(field)
-        field_dict['widget_attrs'] = field.widget.attrs
+        field_dict['widget_attrs'] = bound_field.field.widget.attrs
         return field_dict
 
     def form_to_dict(self, form_instance):
@@ -95,8 +97,8 @@ class JSONForm(object):
         '''
 
         fields_dict = {}
-        for name, field in form_instance.fields.iteritems():
-            fields_dict[name] = self.field_to_dict(field)
+        for name in form_instance.fields.iterkeys():
+            fields_dict[name] = self.field_to_dict(form_instance[name])
 
         form_dict = {}
         form_dict['fields'] = fields_dict
@@ -114,9 +116,10 @@ def index(request):
 
     if request.is_ajax():
         form_dict = JSONForm().form_to_dict(form)
+        print form_dict
         return HttpResponse(json.dumps(form_dict))
 
-    return render_to_response('ajax_form.html')
+    return render_to_response('ajax_form.html', {'form': form})
 
 
 
