@@ -7,8 +7,10 @@ from django.http import HttpResponse
 
 from ajax_form.form_serializer import FormSerializer
 
+
 class ExampleForm(forms.Form):
-    name = forms.CharField(label='user name', help_text="is name", min_length=2, max_length=20)
+    name = forms.CharField(label='user name',
+            help_text="is name", min_length=2, max_length=20)
     is_active = forms.BooleanField(initial=True)
     gender = forms.ChoiceField(choices=[('m', 'male'), ('f', 'female')])
     love_eat = forms.MultipleChoiceField(
@@ -16,7 +18,7 @@ class ExampleForm(forms.Form):
 
     is_marred = forms.ChoiceField(
             choices=[('y', 'yes'), ('no', 'no')],
-            widget=forms.RadioSelect(attrs={'class':'nya'})
+            widget=forms.RadioSelect(attrs={'class': 'nya'})
             )
 
     def clean(self):

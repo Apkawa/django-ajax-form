@@ -5,6 +5,7 @@ from django.utils.encoding import smart_unicode, force_unicode
 from django.utils.functional import Promise
 from django.utils.datastructures import SortedDict
 
+
 class FormSerializer(object):
     @staticmethod
     def is_iterator(obj):
@@ -35,7 +36,8 @@ class FormSerializer(object):
             return force_unicode(data)
 
         elif isinstance(data, dict):
-            return dict((key, self.prepare_data(value, depth - 1)) for key, value in data.iteritems())
+            return dict((key, self.prepare_data(value, depth - 1))
+                                    for key, value in data.iteritems())
 
         elif self.is_iterator(data):
             return [self.prepare_data(value, depth - 1) for value in data]
@@ -62,12 +64,7 @@ class FormSerializer(object):
     def field_to_dict(self, bound_field):
         field_dict = {}
         field = bound_field.field
-        for attr in ['required',
-                        'label',
-                        #'help_text',
-                        #'error_messages',
-                        'choices',
-                        ]:
+        for attr in ['required', 'label', 'choices']:
             if hasattr(field, attr):
                 field_dict[attr] = getattr(field, attr)
 
