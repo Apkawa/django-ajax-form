@@ -1,6 +1,8 @@
 import os
 PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
 
+os.sys.path.append(os.path.dirname(PROJECT_ROOT))
+
 DEBUG = True
 TEMPLATE_DEBUG = DEBUG
 
