@@ -8,6 +8,23 @@ function JSONForm(form_data, values) {
     this.values = values || this.get_values_fields()
 }
 
+JSONForm.prototype.is_in = function (value, sequence) {
+    for (s in sequence) {
+        if (value == sequence[s]) {
+            return true;
+        }
+    }
+    return false;
+}
+JSONForm.prototype.clone = function (obj) {
+    if (null == obj || "object" != typeof obj) return obj;
+    var copy = obj.constructor();
+    for (var attr in obj) {
+        if (obj.hasOwnProperty(attr)) copy[attr] = obj[attr];
+    }
+    return copy;
+}
+
 JSONForm.prototype.render = function () {
     var fields = this.form_data['fields'];
     var result = "";
@@ -44,7 +61,7 @@ JSONForm.prototype.get_values_fields = function () {
     return values
 }
 
-JSONForm.prototype.render_error = function(errors) {
+JSONForm.prototype.render_error = function (errors) {
     if (!errors) {
         return '';
     }
@@ -65,7 +82,7 @@ JSONForm.prototype.render_field = function (field_name, field, value, with_label
     }
     label = '';
     if (with_label) {
-        label = this.build_label(field['id'], field['label'] || field_name)
+        label = this.build_label(field['id_for_label'] || field['id'], field['label'] || field_name)
     }
     field['name'] = field_name;
 
@@ -79,10 +96,13 @@ JSONForm.prototype.render_field = function (field_name, field, value, with_label
         }
         return rendered_field;
     }
-    if (type == 'select') {
+    if (type in {'select':1, 'selectmultiple':1}) {
         return label + this.render_select_field(field, value, type);
     }
-    return this.render_input_field(field, value, 'text');
+    if (type == 'radio') {
+        return label + this.render_radio_field(field, value, type);
+    }
+    return label + this.render_input_field(field, value, 'text');
 }
 
 JSONForm.prototype.build_attrs = function (attrs) {
@@ -112,22 +132,52 @@ JSONForm.prototype.render_input_field = function (field, value, type) {
     attrs['id'] = field['id'];
     var result = '<input '+ this.build_attrs(attrs) + '/>';
     return result
-
 }
 
 JSONForm.prototype.render_select_field = function (field, value, type) {
     var attrs = field['widget_attrs'];
     attrs['name'] = field['name'];
     attrs['id'] = field['id'];
+    if (type == 'selectmultiple') {
+        attrs['multiple'] = 'multiple';
+    }
+    if (this.is_in(typeof(value), ['undefined', 'null'])) {
+        value = []
+    } else if (typeof(value) == 'string') {
+        value = [value]
+    }
     var result = '<select '+ this.build_attrs(attrs) + '>';
     var choices = field['choices'];
     for (choice in choices) {
         option = {value: choices[choice][0]}
-        if (value == choices[choice][0]) {
+        if (this.is_in(choices[choice][0], value)) {
             option['selected'] = 'selected';
         }
         result = result + '<option '+ this.build_attrs(option) + '>' + choices[choice][1] + '</option>';
     }
     result = result + '</select>';
+    return result;
+}
+
+JSONForm.prototype.render_radio_field = function (field, value, type) {
+    var attrs = field['widget_attrs'];
+    attrs['name'] = field['name'];
+    attrs['id'] = field['id'];
+
+    var result = '<ul>'
+    var choices = field['choices'];
+    for (i=0; i < choices.length; i++) {
+        input_field = {'name': field['name'], 'id': field['id'] + '_' + i,
+            'widget_attrs': this.clone(attrs)}
+        if (value == choices[i][0]) {
+            input_field['widget_attrs']['checked'] = 'checked';
+        }
+        result = result
+                + '<li>'
+                + this.render_input_field(input_field, choices[i][0], 'radio')
+                + this.build_label(input_field['id'], choices[i][1])
+                + '</li>';
+    }
+    result = result + '</ul>';
     return result;
 }

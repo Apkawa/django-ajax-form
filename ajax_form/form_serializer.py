@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
 from django import forms
 
-from django.utils.encoding import smart_unicode
+from django.utils.encoding import smart_unicode, force_unicode
 from django.utils.functional import Promise
+from django.utils.datastructures import SortedDict
 
 class FormSerializer(object):
     @staticmethod
@@ -31,7 +32,7 @@ class FormSerializer(object):
             return data
 
         elif isinstance(data, Promise):
-            return unicode(data)
+            return force_unicode(data)
 
         elif isinstance(data, dict):
             return dict((key, self.prepare_data(value, depth - 1)) for key, value in data.iteritems())
@@ -43,6 +44,11 @@ class FormSerializer(object):
 
     def get_field_type(self, field):
         widget = field.widget
+
+        if isinstance(widget, forms.SelectMultiple):
+            return 'selectmultiple'
+        if isinstance(widget, forms.RadioSelect):
+            return 'radio'
         if isinstance(widget, forms.Select):
             return 'select'
         elif isinstance(widget, forms.CheckboxInput):
@@ -67,15 +73,15 @@ class FormSerializer(object):
 
         field_dict['value'] = bound_field.value()
         field_dict['label'] = bound_field.label
+        field_dict['id'] = bound_field.auto_id
+        field_dict['id_for_label'] = bound_field.id_for_label
         field_dict['help_text'] = bound_field.help_text
         field_dict['type'] = self.get_field_type(field)
         field_dict['widget_attrs'] = bound_field.field.widget.attrs
         return field_dict
 
     def serialize(self, form_instance):
-        '''
-        '''
-        fields_dict = {}
+        fields_dict = SortedDict()
         for name in form_instance.fields.iterkeys():
             fields_dict[name] = self.field_to_dict(form_instance[name])
 
@@ -83,5 +89,4 @@ class FormSerializer(object):
         form_dict['fields'] = fields_dict
         form_dict['data'] = form_instance.data
         form_dict['errors'] = form_instance.errors
-        form_dict['initial'] = form_instance.initial
         return self.prepare_data(form_dict)
