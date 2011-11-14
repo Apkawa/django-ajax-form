@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 from django import forms
+from django.forms import formsets
 
 from django.utils.encoding import smart_unicode, force_unicode
 from django.utils.functional import Promise
-from django.utils.datastructures import SortedDict
 
 
 class FormSerializer(object):
@@ -70,6 +70,7 @@ class FormSerializer(object):
 
         field_dict['value'] = bound_field.value()
         field_dict['label'] = bound_field.label
+        field_dict['html_name'] = bound_field.html_name
         field_dict['id'] = bound_field.auto_id
         field_dict['id_for_label'] = bound_field.id_for_label
         field_dict['help_text'] = bound_field.help_text
@@ -77,13 +78,27 @@ class FormSerializer(object):
         field_dict['widget_attrs'] = bound_field.field.widget.attrs
         return field_dict
 
-    def serialize(self, form_instance):
-        fields_dict = SortedDict()
+    def form_to_dict(self, form_instance):
+        fields_dict = {}
         for name in form_instance.fields.iterkeys():
-            fields_dict[name] = self.field_to_dict(form_instance[name])
+            field = form_instance[name]
+            fields_dict[name] = self.field_to_dict(field)
 
         form_dict = {}
         form_dict['fields'] = fields_dict
-        form_dict['data'] = form_instance.data
+        #form_dict['data'] = form_instance.data
         form_dict['errors'] = form_instance.errors
         return self.prepare_data(form_dict)
+
+    def formset_to_dict(self, formset):
+        formset_data = []
+        formset_data.append(self.form_to_dict(formset.management_form))
+        for form in formset.forms:
+            formset_data.append(self.form_to_dict(form))
+        return formset_data
+
+    def serialize(self, form_instance):
+        if isinstance(form_instance, forms.Form):
+            return self.form_to_dict(form_instance)
+        if isinstance(form_instance, formsets.BaseFormSet):
+            return self.formset_to_dict(form_instance)

@@ -1,11 +1,13 @@
 import json
 from django import forms
+from django.forms import formsets
 
 from django.shortcuts import render_to_response
+from django.views.generic.simple import direct_to_template
 
-from django.http import HttpResponse
 
 from ajax_form.form_serializer import FormSerializer
+from ajax_form.utils import json_response
 
 
 class ExampleForm(forms.Form):
@@ -35,7 +37,19 @@ def index(request):
 
     if request.is_ajax():
         form_dict = FormSerializer().serialize(form)
-        print form_dict
-        return HttpResponse(json.dumps(form_dict))
+        return json_response(form_dict, request)
 
-    return render_to_response('ajax_form.html', {'form': form})
+    return direct_to_template(request, 'ajax_form.html', {'form': form})
+
+def ajax_formset(request):
+    formset_class = formsets.formset_factory(ExampleForm)
+    if request.POST:
+        formset = formset_class(data=request.POST)
+    else:
+        formset = formset_class()
+
+    if request.is_ajax():
+        formset_dict = FormSerializer().serialize(formset)
+        return json_response(formset_dict, request)
+
+    return direct_to_template(request, 'ajax_formset.html', {'formset': formset})

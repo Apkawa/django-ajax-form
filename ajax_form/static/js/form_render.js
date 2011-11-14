@@ -5,7 +5,6 @@ function JSONForm(form_data, values) {
     } else {
         this.form_data = form_data
     }
-    this.values = values || this.get_values_fields()
 }
 
 JSONForm.prototype.is_in = function (value, sequence) {
@@ -16,6 +15,14 @@ JSONForm.prototype.is_in = function (value, sequence) {
     }
     return false;
 }
+
+JSONForm.prototype.value_or_default = function (value, default_value) {
+    if (typeof(value) == 'undefined') {
+        return default_value;
+    }
+    return value;
+}
+
 JSONForm.prototype.clone = function (obj) {
     if (null == obj || "object" != typeof obj) return obj;
     var copy = obj.constructor();
@@ -26,37 +33,62 @@ JSONForm.prototype.clone = function (obj) {
 }
 
 JSONForm.prototype.render = function () {
-    var fields = this.form_data['fields'];
+    var form_data = this.form_data
+    if (typeof(form_data) == 'object') {
+        return this.render_form(form_data)
+    } else if (typeof(form_data) == 'array' ) {
+        return this.render_formset(form_data)
+    }
+}
+
+JSONForm.prototype.render_formset = function (formset_data, form_renderer) {
+    var formset_data = formset_data || this.form_data
+    var form_renderer = form_renderer || this.as_ul
+    var result = '';
+    for (i in formset_data) {
+        result = result + form_renderer.call(this, formset_data[i]);
+    }
+    return result
+
+}
+
+JSONForm.prototype.render_form = function (form_data, form_renderer) {
+    var form_data = form_data || this.form_data
+    var form_renderer = form_renderer || this.as_ul
+    return form_renderer.call(this, form_data)
+}
+
+
+JSONForm.prototype.as_ul = function (form_data) {
+    var fields = form_data['fields'];
+    var values = this.get_values_fields(form_data)
     var result = "";
+    if ('__all__' in form_data['errors']) {
+        result = result + form_data['errors']['__all__'];
+    }
     for (f_name in fields) {
-        result = result + this.render_field(f_name, fields[f_name], this.values[f_name]);
+        var field = fields[f_name]
+        if (field['type'] == 'hidden') {
+            result = result + this.render_field(f_name, field, values[f_name], false)
+        } else {
+            var errors = this.render_error(form_data['errors'][f_name]);
+
+            result = result
+                        + '<li>'
+                        + this.render_field(f_name, field, values[f_name])
+                        +  '</li>'
+                        + errors
+        }
     }
     return result
 }
 
-JSONForm.prototype.as_ul = function () {
-    var fields = this.form_data['fields'];
-    var result = "";
-    if ('__all__' in this.form_data['errors']) {
-        result = result + this.form_data['errors']['__all__'];
-    }
-    for (f_name in fields) {
-        var errors = this.render_error(this.form_data['errors'][f_name]);
-        result = result
-                    + '<li>'
-                    + this.render_field(f_name, fields[f_name], this.values[f_name])
-                    +  '</li>'
-                    + errors
-    }
-    return result
-}
 
-
-JSONForm.prototype.get_values_fields = function () {
+JSONForm.prototype.get_values_fields = function (form_data) {
     var values = {}
-    var fields = this.form_data['fields'];
+    var fields = form_data['fields'];
     for (f_name in fields) {
-        values[f_name] = this.form_data['fields'][f_name]['value'];
+        values[f_name] = form_data['fields'][f_name]['value'];
     }
     return values
 }
@@ -74,9 +106,10 @@ JSONForm.prototype.render_error = function (errors) {
 
 }
 
+
 JSONForm.prototype.render_field = function (field_name, field, value, with_label) {
     var type = field['type'];
-    var with_label = with_label || true;
+    var with_label = this.value_or_default(with_label, true);
     if (! ('id' in field)) {
         field['id'] = 'id_' + field_name;
     }
@@ -84,7 +117,7 @@ JSONForm.prototype.render_field = function (field_name, field, value, with_label
     if (with_label) {
         label = this.build_label(field['id_for_label'] || field['id'], field['label'] || field_name)
     }
-    field['name'] = field_name;
+    field['name'] = field['html_name'];
 
     if (type in {'textarea':1, 'hidden':1, 'text':1, 'checkbox':1}) {
 

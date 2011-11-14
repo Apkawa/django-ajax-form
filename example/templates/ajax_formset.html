@@ -9,7 +9,7 @@
 
         function update_form(data) {
             var jf = new JSONForm(data);
-            var form = jf.render_form();
+            var form = jf.render_formset();
             $("#test ul").html(form);
         }
 
@@ -54,7 +54,7 @@
 {% endblock js %}
 
 {% block content %}
-   <h1 id="heading"> Ajax form</h1>
+   <h1 id="heading"> Ajax formset</h1>
     <form action='.' method='POST' id='test'>
 
         <ul>
@@ -62,11 +62,11 @@
         </ul>
     <button type="submit">Submit</button>
     </form>
-   <h1> Standart form</h1>
+   <h1> Standart formset</h1>
     <form action='.' method='POST'>
         {% csrf_token %}
         <ul>
-            {{ form.as_ul }}
+            {{ formset.as_ul }}
         </ul>
     <button type="submit">Submit</button>
     </form>
