@@ -7,6 +7,10 @@ from django.utils.functional import Promise
 
 
 class FormSerializer(object):
+
+    def __init__(self, defaults=None):
+        self._defaults = defaults
+
     @staticmethod
     def is_iterator(obj):
         if isinstance(obj, (list, tuple)):
@@ -44,21 +48,44 @@ class FormSerializer(object):
 
         return smart_unicode(data)
 
+    @staticmethod
+    def is_instance_of_class(instance, cls):
+        if isinstance(cls, (tuple, list)):
+            for _cls in cls:
+                if FormSerializer.is_instance_of_class(instance. _cls):
+                    return True
+            return False
+        return instance.__class__ is cls
+
+    def _get_override_type(self, field):
+        if callable(self._defaults):
+            return self._defaults
+
     def get_field_type(self, field):
         widget = field.widget
 
+        override_type = self._get_override_type(field)
+        if override_type is not None:
+            return override_type
+
         if isinstance(widget, forms.SelectMultiple):
             return 'selectmultiple'
-        if isinstance(widget, forms.RadioSelect):
+
+        elif isinstance(widget, forms.RadioSelect):
             return 'radio'
-        if isinstance(widget, forms.Select):
+
+        elif isinstance(widget, forms.Select):
             return 'select'
+
         elif isinstance(widget, forms.CheckboxInput):
             return 'checkbox'
+
         elif isinstance(widget, forms.Textarea):
             return 'textarea'
+
         elif isinstance(widget, forms.HiddenInput):
             return 'hidden'
+
         return 'text'
 
     def field_to_dict(self, bound_field):
